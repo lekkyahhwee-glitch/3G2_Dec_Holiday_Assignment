@@ -368,7 +368,10 @@ function poly(terms){ // [[coef,'x^{2}'],...] -> "3x^{2} − 5x + 4"
 }
 function parseStudentNumber(raw){
   if(raw==null) return NaN;
-  let s=String(raw).trim().replace(/[−‒–—―﹣－]/g,'-').replace(/\s+/g,'');
+  let s=String(raw).trim().replace(/[−‒–—―﹣－]/g,'-');
+  const mx=s.match(/^([-+]?)(\d+)\s+(\d+)\s*\/\s*(\d+)$/); // mixed number like 12 3/4
+  if(mx){const d=parseFloat(mx[4]);if(d===0)return NaN;const v=parseFloat(mx[2])+parseFloat(mx[3])/d;return mx[1]==='-'?-v:v;}
+  s=s.replace(/\s+/g,'');
   if(/^-?\d+,\d+$/.test(s)) s=s.replace(',','.');
   const fm=s.match(/^([-+]?\d+(?:\.\d+)?)\/([-+]?\d+(?:\.\d+)?)$/);
   if(fm){const d=parseFloat(fm[2]);return d===0?NaN:parseFloat(fm[1])/d;}
@@ -631,7 +634,7 @@ Object.assign(QUESTS,{
     ex:['ax + ay + bx + by','= a(x + y) + b(x + y)','= (x + y)(a + b)']
   })},
   {type:'steps',key:'q1',skill:'Factorise by grouping',eoy:'EOY P1 Q1',gen:(rng)=>{
-    const p=ri(rng,2,9);let q=ri(rng,2,9);if(q===p)q=p===9?2:p+1;
+    const g=(m,n)=>n?g(n,m%n):m;let p,q;do{p=ri(rng,2,9);q=ri(rng,2,9);}while(g(p,q)!==1); // coprime, so the answer really is fully factorised
     const terms=[`${p}ax`,`− ${p}ay`,`− ${q}bx`,`+ ${q}by`];
     const exprPlain=`${p}ax − ${p}ay − ${q}bx + ${q}by`;
     const S=[
@@ -641,7 +644,7 @@ Object.assign(QUESTS,{
     ];
     const D=[
       {l:'Take out x from all four terms',m:'',why:'Does every term have an x? Check the 2nd and 4th terms.'},
-      {l:'Factorise the 2nd pair with +'+q+'b',m:`${p}a(x − y) + ${q}b(−x + y)`,why:'Look at the two brackets. Are they the same? What sign should go in front?'},
+      {l:'Factorise the 2nd pair',m:`${p}a(x − y) − ${q}b(x + y)`,why:'Expand −'+q+'b(x + y). Do you get back −'+q+'bx + '+q+'by? Check the sign inside the bracket.'},
       {l:'Cancel the a and b terms',m:'',why:'Can different letters cancel each other? What does grouping do first?'}
     ];
     const opts=[`(x − y)(${p}a − ${q}b)`,`(x − y)(${p}a + ${q}b)`,`(x + y)(${p}a − ${q}b)`,`${p}a(x − y) − ${q}b`];
@@ -658,7 +661,7 @@ Object.assign(QUESTS,{
       tpl:[{b:0},'x^{2} + ',{b:1},'x + ',{b:2}],ans:[m,b,c],
       hint:`Multiply every term in each bracket by the term in front. What is −${k} × −${d}: positive or negative?`,
       solution:[`${m}x(x + ${n}) − ${k}(x − ${d})`,`= ${m}x^{2} + ${m*n}x − ${k}x + ${c}`,`= ${poly([[m,'x^{2}'],[b,'x'],[c,'']])}`],
-      note:'Type a negative number if a term is subtracted.',space:40};
+      note:'Type a negative number if a term is subtracted. If there is just x, type 1.',space:40};
   }},
   {type:'boxes',key:'q3',skill:'Perfect square expansion',eoy:'EOY P1 Q2(b)',gen:(rng)=>{
     let n=ri(rng,2,8);if(rng()<0.5)n=-n;
@@ -669,7 +672,7 @@ Object.assign(QUESTS,{
       note:'Type a negative number if a term is subtracted.',space:36};
   }},
   {type:'mcq',key:'q4',skill:'Factorise by grouping',thinking:true,gen:(rng)=>{
-    const p=ri(rng,2,9);let q=ri(rng,2,9);if(q===p)q=p===2?3:p-1;
+    const g=(m,n)=>n?g(n,m%n):m;let p,q;do{p=ri(rng,2,9);q=ri(rng,2,9);}while(g(p,q)!==1);
     const opts=[`(a + b)(${p}x + ${q}y)`,`(a + b)(${q}x + ${p}y)`,`(a − b)(${p}x + ${q}y)`,`(a + b)(${p}x − ${q}y)`];
     const order=shuffle(rng,[0,1,2,3]);
     return {prompt:`Factorise completely ${p}ax + ${q}by + ${q}ay + ${p}bx.`,opts:order.map(i=>({m:opts[i]})),correct:order.indexOf(0),
@@ -712,7 +715,7 @@ Object.assign(QUESTS,{
       solution:[`\\f{${a}}{x + ${p}} + \\f{${b}}{x + ${q}}`,`= \\f{${a}(x + ${q}) + ${b}(x + ${p})}{(x + ${p})(x + ${q})}`,`= \\f{${a}x + ${a*q} + ${b}x + ${b*p}}{(x + ${p})(x + ${q})}`,`= \\f{${A}x + ${B}}{(x + ${p})(x + ${q})}`,`A = ${A}`,`B = ${B}`],space:50};
   }},
   {type:'boxes',key:'q4',skill:'Fractions with x² − k²',eoy:'EOY P2 Q1',gen:(rng)=>{
-    const k=ri(rng,2,7);let m=ri(rng,1,9);if(m===k)m=k+1;
+    const k=ri(rng,2,7);let m;do{m=ri(rng,1,9);}while(m===k||m===2*k);
     const B=m-k;
     return {prompt:`Write \\f{${m}}{x^{2} − ${k*k}} + \\f{1}{x + ${k}} as a single fraction in the form \\f{x + B}{(x + ${k})(x − ${k})}.`,
       tpl:['B = ',{b:0}],ans:[B],note:'Type a negative number if needed.',
@@ -792,7 +795,7 @@ Object.assign(QUESTS,{
     const order=shuffle(rng,[0,1,2,3]);
     return {prompt:`Factorise ${poly([[a,'x^{2}'],[B,'x'],[C,'']])}.`,opts:order.map(i=>({m:opts[i]})),correct:order.indexOf(0),
       hint:'Expand each option. Which one gives the same middle term, not just the same first and last terms?',
-      solution:[`${br(a,p)}${br(1,q)}`,`= ${a}x^{2} ${a*q<0?'−':'+'} ${Math.abs(a*q)}x ${p<0?'−':'+'} ${Math.abs(p)}x ${C<0?'−':'+'} ${Math.abs(C)}`,`= ${poly([[a,'x^{2}'],[B,'x'],[C,'']])}`],space:40};
+      solution:[`${br(a,p)}${br(1,q)}`,`= ${a}x^{2} ${a*q<0?'−':'+'} ${Math.abs(a*q)===1?'':Math.abs(a*q)}x ${p<0?'−':'+'} ${Math.abs(p)===1?'':Math.abs(p)}x ${C<0?'−':'+'} ${Math.abs(C)}`,`= ${poly([[a,'x^{2}'],[B,'x'],[C,'']])}`],space:40};
   }},
   {type:'boxes',key:'q3',skill:'Factorise completely',thinking:true,eoy:'EOY P1 Q1',gen:(rng)=>{
     const c=ri(rng,2,5),k=ri(rng,2,7);
@@ -815,6 +818,9 @@ Object.assign(QUESTS,{
 
 /* ===== WEEK 2 ===== */
 (()=>{
+const f2=v=>{const t=Math.abs(v).toFixed(2);return (v<0&&t!=='0.00'?'−':'')+t;};
+const f4=v=>{const t=Math.abs(v).toFixed(4);return (v<0&&t!=='0.0000'?'−':'')+t;};
+const cx=(c,v='x')=>(c===1?'':c===-1?'−':nf(c))+v;
 const gcd=(a,b)=>{a=Math.abs(a);b=Math.abs(b);while(b){[a,b]=[b,a%b];}return a;};
 const sg=n=>(n<0?'− ':'+ ')+Math.abs(n);                 // "+ 3" / "− 3"
 const lin=(c,v='x')=>`(${v} ${sg(c)})`;                    // "(x − 3)"
@@ -836,7 +842,9 @@ function formulaLines(a,b,c){
     `a = ${nf(a)}`,`b = ${nf(b)}`,`c = ${nf(c)}`,
     `x = \\f{−(${nf(b)}) ± √((${nf(b)})^{2} − 4(${nf(a)})(${nf(c)}))}{2(${nf(a)})}`,
     `x = \\f{${nf(-b)} ± √${d}}{${2*a}}`,
-    `x = ${fx(r1)} or x = ${fx(r2)}`]};
+    `x = \\f{${nf(-b)} + ${Math.sqrt(d).toFixed(3)}}{${2*a}}`,
+    `x = \\f{${nf(-b)} − ${Math.sqrt(d).toFixed(3)}}{${2*a}}`,
+    `x = ${f2(r1)} or x = ${f2(r2)}`]};
 }
 
 Object.assign(QUESTS,{
@@ -850,9 +858,9 @@ Object.assign(QUESTS,{
   })},
   {type:'steps',key:'q1',skill:'Solve by factorising',eoy:'EOY P1 Q3',gen:(rng)=>{
     const {p,r,s,a,b,c}=nonMonic(rng);
-    const eq=eqOf(a,b,c),f1=`(${p}x ${sg(r)})`,f2=lin(s);
+    const eq=eqOf(a,b,c),f1=`(${p}x ${sg(r)})`,fb2=lin(s);
     const S=[
-      {l:'Factorise the left side',m:`${f1}${f2} = 0`},
+      {l:'Factorise the left side',m:`${f1}${fb2} = 0`},
       {l:'Set each bracket equal to 0',m:`${p}x ${sg(r)} = 0 or x ${sg(s)} = 0`},
       {l:'Make x the subject of each',m:`${p}x = ${nf(-r)} or x = ${nf(-s)}`}
     ];
@@ -866,7 +874,7 @@ Object.assign(QUESTS,{
     return {prompt:`Solve ${eq} by factorisation.`,steps:S,distract:D,pool:shuffle(rng,[0,1,2,3,4,5]),
       final:{prompt:'So the solutions are…',opts:order.map(i=>({m:opts[i]})),correct:order.indexOf(0),
         hint:`Look at your last line. What do you divide ${p}x = ${nf(-r)} by to get x on its own?`},
-      solution:[eq,`${f1}${f2} = 0`,`${p}x ${sg(r)} = 0 or x ${sg(s)} = 0`,`x = ${fr(-r,p)} or x = ${nf(-s)}`],space:60};
+      solution:[eq,`${f1}${fb2} = 0`,`${p}x ${sg(r)} = 0 or x ${sg(s)} = 0`,`x = ${fr(-r,p)} or x = ${nf(-s)}`],space:60};
   }},
   {type:'boxes',key:'q2',skill:'Solve x² + bx + c = 0',gen:(rng)=>{
     let r1,r2;do{r1=ri(rng,1,9)*sgnR(rng);r2=ri(rng,1,9)*sgnR(rng);}while(r1===r2);
@@ -887,10 +895,10 @@ Object.assign(QUESTS,{
   }},
   {type:'boxes',key:'q4',skill:'Solve ax² + bx + c = 0',eoy:'EOY P1 Q3',gen:(rng)=>{
     const {p,r,s,a,b,c}=nonMonic(rng),eq=eqOf(a,b,c);
-    return {prompt:`Solve ${eq} by factorisation.`,tpl:['x = ',{b:0},' or x = ',{b:1}],ans:[-r/p,-s],unordered:true,tol:0.01,
-      hint:`Which two brackets multiply to give ${a}x^{2} and ${nf(c)}? Does the middle term come out as ${nf(b)}x?`,
+    return {prompt:`Solve ${eq} by factorisation.`,tpl:['x = ',{b:0},' or x = ',{b:1}],ans:[-r/p,-s],unordered:true,tol:0.005,
+      hint:`Which two brackets multiply to give ${a}x^{2} and ${nf(c)}? Does the middle term come out as ${cx(b)}?`,
       solution:[eq,`(${p}x ${sg(r)})${lin(s)} = 0`,`${p}x ${sg(r)} = 0 or x ${sg(s)} = 0`,`x = ${fr(-r,p)} or x = ${nf(-s)}`],
-      note:'You may type a fraction like 2/3.',space:50};
+      note:'Give your answer as a fraction (e.g. −7/3) or correct to 2 decimal places.',space:50};
   }},
   {type:'ref',key:'tb',pool:'auto',tag:'Throwback'}
 ]},
@@ -948,21 +956,21 @@ Object.assign(QUESTS,{
     let h,k,c;do{h=ri(rng,1,6)*sgnR(rng);k=-ri(rng,2,30);c=k+h*h;}while(isSq(-k)||c===0);
     const ex=poly([[1,'x^{2}'],[2*h,'x'],[c,'']]),rt=Math.sqrt(-k),r1=-h+rt,r2=-h-rt;
     return {prompt:`${ex} = ${sq(h,k)}. Hence solve ${ex} = 0, correct to 2 decimal places.`,
-      tpl:['x = ',{b:0},' or x = ',{b:1}],ans:[r1,r2],unordered:true,tol:0.0051,
+      tpl:['x = ',{b:0},' or x = ',{b:1}],ans:[r1,r2],unordered:true,tol:0.005,
       hint:'Use the completed-square form. What can you move to the other side? What do you do next to undo the square?',
-      solution:[`${sq(h,k)} = 0`,`(x ${sg(h)})^{2} = ${-k}`,`x ${sg(h)} = ±√${-k}`,`x ${sg(h)} = ${rdp(rt,4)} or x ${sg(h)} = −${rdp(rt,4)}`,`x = ${fx(r1)} or x = ${fx(r2)}`],space:50};
+      solution:[`${sq(h,k)} = 0`,`(x ${sg(h)})^{2} = ${-k}`,`x ${sg(h)} = ±√${-k}`,`x ${sg(h)} = ${f4(rt)} or x ${sg(h)} = −${f4(rt)}`,`x = ${f2(r1)} or x = ${f2(r2)}`],space:50};
   }},
   {type:'boxes',key:'q2',skill:'Complete the square, then solve',eoy:'EOY P1 Q4',gen:(rng)=>{
     let h,k,c;do{h=ri(rng,1,6)*sgnR(rng);k=-ri(rng,2,30);c=k+h*h;}while(isSq(-k)||c===0);
     const ex=poly([[1,'x^{2}'],[2*h,'x'],[c,'']]),rt=Math.sqrt(-k),r1=-h+rt,r2=-h-rt;
     return {prompt:`Solve ${ex} = 0 by completing the square. Give your answers correct to 2 decimal places.`,
-      tpl:['x = ',{b:0},' or x = ',{b:1}],ans:[r1,r2],unordered:true,tol:0.0051,
+      tpl:['x = ',{b:0},' or x = ',{b:1}],ans:[r1,r2],unordered:true,tol:0.005,
       hint:`Start by halving ${nf(2*h)}. What does (x + h)^{2} + k look like for this expression?`,
-      solution:[`${ex} = 0`,`(x ${sg(h)})^{2} − ${h*h} ${sg(c)} = 0`,`${sq(h,k)} = 0`,`(x ${sg(h)})^{2} = ${-k}`,`x ${sg(h)} = ±√${-k}`,`x = ${fx(r1)} or x = ${fx(r2)}`],space:58};
+      solution:[`${ex} = 0`,`(x ${sg(h)})^{2} − ${h*h} ${sg(c)} = 0`,`${sq(h,k)} = 0`,`(x ${sg(h)})^{2} = ${-k}`,`x ${sg(h)} = ±√${-k}`,`x ${sg(h)} = ${f4(rt)} or x ${sg(h)} = −${f4(rt)}`,`x = ${f2(r1)} or x = ${f2(r2)}`],space:58};
   }},
   {type:'mcq',key:'q3',skill:'When there is no solution',thinking:true,gen:(rng)=>{
     let h,q;do{h=ri(rng,1,7)*sgnR(rng);q=ri(rng,2,6);}while(q===Math.abs(h));
-    const opts=['None. A square can\'t be negative.',`Two: x = ${nf(-h+q)} or x = ${nf(-h-q)}`,`One: x = ${nf(-h)}`,`Two: x = ${nf(h+q)} or x = ${nf(h-q)}`];
+    const opts=['None',`Two: x = ${nf(-h+q)} or x = ${nf(-h-q)}`,`One: x = ${nf(-h)}`,`Two: x = ${nf(h+q)} or x = ${nf(h-q)}`];
     const order=shuffle(rng,[0,1,2,3]);
     return {prompt:`How many solutions does (x ${sg(h)})^{2} = −${q*q} have?`,opts:order.map(i=>({m:opts[i]})),correct:order.indexOf(0),
       hint:'Pick any number and square it. Can the answer ever be negative?',
@@ -971,9 +979,9 @@ Object.assign(QUESTS,{
   {type:'boxes',key:'q4',skill:'Square root and round',gen:(rng)=>{
     let h,k;do{h=ri(rng,1,8)*sgnR(rng);k=ri(rng,2,30);}while(isSq(k));
     const rt=Math.sqrt(k),r1=-h+rt,r2=-h-rt;
-    return {prompt:`Solve (x ${sg(h)})^{2} = ${k}, correct to 2 decimal places.`,tpl:['x = ',{b:0},' or x = ',{b:1}],ans:[r1,r2],unordered:true,tol:0.0051,
+    return {prompt:`Solve (x ${sg(h)})^{2} = ${k}, correct to 2 decimal places.`,tpl:['x = ',{b:0},' or x = ',{b:1}],ans:[r1,r2],unordered:true,tol:0.005,
       hint:'How do you undo a square? How many numbers square to give the same answer?',
-      solution:[`(x ${sg(h)})^{2} = ${k}`,`x ${sg(h)} = ±√${k}`,`x ${sg(h)} = ${rdp(rt,4)} or x ${sg(h)} = −${rdp(rt,4)}`,`x = ${fx(r1)} or x = ${fx(r2)}`],space:40};
+      solution:[`(x ${sg(h)})^{2} = ${k}`,`x ${sg(h)} = ±√${k}`,`x ${sg(h)} = ${f4(rt)} or x ${sg(h)} = −${f4(rt)}`,`x = ${f2(r1)} or x = ${f2(r2)}`],space:40};
   }},
   {type:'ref',key:'tb',pool:'auto',tag:'Throwback'}
 ]},
@@ -984,12 +992,12 @@ Object.assign(QUESTS,{
     front:'What is the quadratic formula?',
     steps:['Write the equation as ax^{2} + bx + c = 0.','Write down a, b and c <span class="key">with their signs</span>.','x = \\f{−b ± √(b^{2} − 4ac)}{2a}','Use brackets for negatives. Round at the end.'],
     pdfSteps:['Write the equation as ax^{2} + bx + c = 0.','Write down a, b and c with their signs.','x = \\f{−b ± square root of (b^{2} − 4ac)}{2a}','Use brackets for negatives. Round at the end.'],
-    ex:null
+    ex:['2x^{2} + 3x − 4 = 0','a = 2','b = 3','c = −4','b^{2} − 4ac = 9 + 32 = 41','x = \\f{−3 + 6.403}{4} or x = \\f{−3 − 6.403}{4}','x = 0.85 or x = −2.35']
   })},
   {type:'boxes',key:'q1',skill:'Quadratic formula',eoy:'EOY P2 Q3',gen:(rng)=>{
     let a,b,c,d;do{a=ri(rng,2,3);b=ri(rng,1,9)*sgnR(rng);c=ri(rng,1,9)*sgnR(rng);d=b*b-4*a*c;}while(d<=0||isSq(d));
     const F=formulaLines(a,b,c),eq=eqOf(a,b,c);
-    return {prompt:`Solve ${eq}, giving your answers correct to 2 decimal places.`,tpl:['x = ',{b:0},' or x = ',{b:1}],ans:[F.r1,F.r2],unordered:true,tol:0.0051,
+    return {prompt:`Solve ${eq}, giving your answers correct to 2 decimal places.`,tpl:['x = ',{b:0},' or x = ',{b:1}],ans:[F.r1,F.r2],unordered:true,tol:0.005,
       hint:'What are a, b and c? Careful with the signs. Put negatives in brackets when you substitute.',
       solution:[eq,...F.lines],space:58};
   }},
@@ -1011,7 +1019,7 @@ Object.assign(QUESTS,{
   {type:'boxes',key:'q4',skill:'Rearrange, then use the formula',gen:(rng)=>{
     let p,q,d;do{p=ri(rng,1,9)*sgnR(rng);q=ri(rng,2,20);d=p*p+4*q;}while(isSq(d));
     const F=formulaLines(1,p,-q);
-    return {prompt:`Solve x${lin(p)} = ${q}, giving your answers correct to 2 decimal places.`,tpl:['x = ',{b:0},' or x = ',{b:1}],ans:[F.r1,F.r2],unordered:true,tol:0.0051,
+    return {prompt:`Solve x${lin(p)} = ${q}, giving your answers correct to 2 decimal places.`,tpl:['x = ',{b:0},' or x = ',{b:1}],ans:[F.r1,F.r2],unordered:true,tol:0.005,
       hint:'Can you use the formula straight away? What must the right side be first?',
       solution:[`x${lin(p)} = ${q}`,`${poly([[1,'x^{2}'],[p,'x']])} = ${q}`,eqOf(1,p,-q),...F.lines],space:60};
   }},
@@ -1031,6 +1039,9 @@ Object.assign(QUESTS,{
 
 /* ===== WEEK 3 ===== */
 (()=>{
+const f2=v=>{const t=Math.abs(v).toFixed(2);return (v<0&&t!=='0.00'?'−':'')+t;};
+const f4=v=>{const t=Math.abs(v).toFixed(4);return (v<0&&t!=='0.0000'?'−':'')+t;};
+const cx=(c,v='x')=>(c===1?'':c===-1?'−':nf(c))+v;
 const sg=n=>(n<0?'− ':'+ ')+Math.abs(n);
 const lin=(c,v='x')=>`(${v} ${sg(c)})`;
 const isSq=n=>n>=0&&Math.round(Math.sqrt(n))**2===n;
@@ -1044,7 +1055,10 @@ function formulaLines(a,b,c){
   const d=b*b-4*a*c,r1=(-b+Math.sqrt(d))/(2*a),r2=(-b-Math.sqrt(d))/(2*a);
   return {d,r1,r2,lines:[`a = ${nf(a)}`,`b = ${nf(b)}`,`c = ${nf(c)}`,
     `x = \\f{−(${nf(b)}) ± √((${nf(b)})^{2} − 4(${nf(a)})(${nf(c)}))}{2(${nf(a)})}`,
-    `x = \\f{${nf(-b)} ± √${d}}{${2*a}}`,`x = ${fx(r1)} or x = ${fx(r2)}`]};
+    `x = \\f{${nf(-b)} ± √${d}}{${2*a}}`,
+    `x = \\f{${nf(-b)} + ${Math.sqrt(d).toFixed(3)}}{${2*a}}`,
+    `x = \\f{${nf(-b)} − ${Math.sqrt(d).toFixed(3)}}{${2*a}}`,
+    `x = ${f2(r1)} or x = ${f2(r2)}`]};
 }
 
 Object.assign(QUESTS,{
@@ -1061,11 +1075,11 @@ Object.assign(QUESTS,{
     const S=[
       {l:'Write the length in terms of x',m:`Length = (${k}x + ${p}) m`},
       {l:'Area = length × width',m:`x(${k}x + ${p}) = ${A}`},
-      {l:'Expand and make one side 0',m:`${k}x^{2} + ${p}x − ${A} = 0`}
+      {l:'Expand and make one side 0',m:`${k}x^{2} + ${cx(p)} − ${A} = 0`}
     ];
     const D=[
       {l:'Add the length and the width',m:`x + ${k}x + ${p} = ${A}`,why:'Is adding sides the area or part of the perimeter? How do you find the area of a rectangle?'},
-      {l:`Write the length as x + ${k} + ${p}`,m:'',why:`"${kw} its width" — which operation does "times" mean?`},
+      {l:`Write the length as x + ${k} + ${p}`,m:'',why:`"${kw} its width" — does that mean add or multiply?`},
       {l:'Halve the area first',m:'',why:'Is there a ½ in the area formula of a rectangle?'}
     ];
     const opts=[eqOf(k,p,-A),eqOf(k,p,A),eqOf(1,k*p,-A),eqOf(k+1,p,-A)];
@@ -1074,7 +1088,7 @@ Object.assign(QUESTS,{
       diagram:rectDiagram(`(${k}x + ${p}) m`,'x m'),steps:S,distract:D,pool:shuffle(rng,[0,1,2,3,4,5]),
       final:{prompt:'So the equation is…',opts:order.map(i=>({m:opts[i]})),correct:order.indexOf(0),
         hint:'Look at your last step. Which option matches it exactly, sign by sign?'},
-      solution:['Width = x m',`Length = (${k}x + ${p}) m`,`x(${k}x + ${p}) = ${A}`,`${k}x^{2} + ${p}x = ${A}`,`${k}x^{2} + ${p}x − ${A} = 0`],space:50};
+      solution:['Width = x m',`Length = (${k}x + ${p}) m`,`x(${k}x + ${p}) = ${A}`,`${k}x^{2} + ${cx(p)} = ${A}`,`${k}x^{2} + ${cx(p)} − ${A} = 0`],space:50};
   }},
   {type:'mcq',key:'q2',skill:'Consecutive numbers',gen:(rng)=>{
     const n=ri(rng,5,15),N=n*(n+1);
@@ -1126,10 +1140,10 @@ Object.assign(QUESTS,{
     let w,m;do{w=ri(rng,3,12);m=ri(rng,4,16);}while(m===w);
     const opts=['A width cannot be negative.','Negative numbers can\'t be squared.','It does not satisfy the equation.','The larger answer is always right.'];
     const order=shuffle(rng,[0,1,2,3]);
-    return {prompt:`Solving for the width x m of a garden gives x = ${w} or x = −${m}. Why must x = −${m} be rejected?`,
+    return {prompt:`The width of a garden is x m. Solving ${lin(-w)}${lin(m)} = 0 gives x = ${w} or x = −${m}. Why must x = −${m} be rejected?`,
       opts:order.map(i=>({m:opts[i]})),correct:order.indexOf(0),
-      hint:`Put x = −${m} back into the equation. Does it work? Then think: what does x stand for?`,
-      solution:[`x = −${m} does satisfy the equation.`,'But x is a width.',`A width of −${m} m is impossible.`,`So reject x = −${m}.`],space:26};
+      hint:`Put x = −${m} into ${lin(-w)}${lin(m)}. Do you get 0? Then think: what does x stand for?`,
+      solution:[`(−${m} ${sg(-w)})(−${m} + ${m}) = 0, so x = −${m} does satisfy the equation.`,'But x is a width.',`A width of −${m} m is impossible.`,`So reject x = −${m}.`],space:26};
   }},
   {type:'boxes',key:'q3',skill:'Age problem',gen:(rng)=>{
     const a=ri(rng,4,15),d=ri(rng,2,8),P=a*(a+d);
@@ -1143,7 +1157,7 @@ Object.assign(QUESTS,{
     return {prompt:`A rectangle has width x cm and length (x + ${p}) cm. Its area is ${A} cm^{2}. Find the length.`,
       diagram:rectDiagram(`(x + ${p}) cm`,'x cm'),tpl:['Length = ',{b:0},' cm'],ans:[w+p],
       hint:'Form the equation and solve it. Which answer can you keep? Is x the length or the width?',
-      solution:[`x(x + ${p}) = ${A}`,`x^{2} + ${p}x − ${A} = 0`,`${lin(-w)}${lin(w+p)} = 0`,`x = ${w} or x = −${w+p}`,`Reject x = −${w+p}`,`Length = ${w} + ${p}`,`Length = ${w+p} cm`],space:56};
+      solution:[`x(x + ${p}) = ${A}`,`x^{2} + ${p}x − ${A} = 0`,`${lin(-w)}${lin(w+p)} = 0`,`x = ${w} or x = −${w+p}`,`Reject x = −${w+p} (a length cannot be negative)`,`Length = ${w} + ${p}`,`Length = ${w+p} cm`],space:56};
   }},
   {type:'ref',key:'tb',pool:'auto',tag:'Throwback'}
 ]},
@@ -1184,7 +1198,7 @@ Object.assign(QUESTS,{
   {type:'boxes',key:'q4',skill:'Fractional equation to 2 d.p.',gen:(rng)=>{
     let p,N,d;do{p=ri(rng,1,8)*sgnR(rng);N=ri(rng,3,25);d=p*p+4*N;}while(isSq(d));
     const F=formulaLines(1,p,-N),den=`x ${sg(p)}`;
-    return {prompt:`Solve x = \\f{${N}}{${den}}, giving your answers correct to 2 decimal places.`,tpl:['x = ',{b:0},' or x = ',{b:1}],ans:[F.r1,F.r2],unordered:true,tol:0.0051,
+    return {prompt:`Solve x = \\f{${N}}{${den}}, giving your answers correct to 2 decimal places.`,tpl:['x = ',{b:0},' or x = ',{b:1}],ans:[F.r1,F.r2],unordered:true,tol:0.005,
       hint:'Clear the fraction first and make one side 0. Does it factorise? If not, what can you use?',
       solution:[`x(${den}) = ${N}`,eqOf(1,p,-N),...F.lines],space:60};
   }},
@@ -1197,7 +1211,7 @@ Object.assign(QUESTS,{
     front:'What is the plan for a quadratic word problem?',
     steps:['Choose x. Label a diagram.','Form the equation.','Solve it.','Reject answers that are impossible.','Answer the question asked, <span class="key">with units</span>.'],
     pdfSteps:['Choose x. Label a diagram.','Form the equation.','Solve it.','Reject answers that are impossible.','Answer the question asked, with units.'],
-    ex:null
+    ex:['Width = x cm, length = (x + 4) cm, area = 45 cm^{2}','x(x + 4) = 45','x^{2} + 4x − 45 = 0','(x + 9)(x − 5) = 0','x = −9 or x = 5','Reject x = −9 (a length cannot be negative)','Width = 5 cm']
   })},
   {type:'boxes',key:'q1',skill:'Pythagoras and quadratics',gen:(rng)=>{
     const T=[[3,4,5],[5,12,13],[8,15,17],[20,21,29]];
@@ -1208,7 +1222,7 @@ Object.assign(QUESTS,{
       sides:[['C','A','x cm'],['A','B',`(x + ${a}) cm`],['B','C',`(x + ${b}) cm`]],margin:1.8});
     return {prompt:`A right-angled triangle has sides x cm, (x + ${a}) cm and (x + ${b}) cm. Find x.`,diagram,tpl:['x = ',{b:0}],ans:[x],
       hint:'Which side is the longest? What does Pythagoras\' theorem say about the three sides?',
-      solution:[`x^{2} + (x + ${a})^{2} = (x + ${b})^{2}`,`x^{2} + x^{2} + ${2*a}x + ${a*a} = x^{2} + ${2*b}x + ${b*b}`,eqOf(1,B,C),`${lin(-x)}${lin(-other)} = 0`,`x = ${x} or x = ${nf(other)}`,`Reject x = ${nf(other)}`,`x = ${x}`],space:60};
+      solution:[`x^{2} + (x + ${a})^{2} = (x + ${b})^{2}`,`x^{2} + x^{2} + ${2*a}x + ${a*a} = x^{2} + ${2*b}x + ${b*b}`,`2x^{2} + ${2*a}x + ${a*a} = x^{2} + ${2*b}x + ${b*b}`,eqOf(1,B,C),`${lin(-x)}${lin(-other)} = 0`,`x = ${x} or x = ${nf(other)}`,`Reject x = ${nf(other)} (a length cannot be negative)`,`x = ${x}`],space:60};
   }},
   {type:'boxes',key:'q2',skill:'Number problem',gen:(rng)=>{
     const n=ri(rng,4,14),N=n*n+n;
@@ -1230,7 +1244,7 @@ Object.assign(QUESTS,{
     return {prompt:`A rectangle has perimeter ${P} cm and area ${A} cm^{2}. Its width is x cm and is shorter than its length. Find the width.`,
       tpl:['Width = ',{b:0},' cm'],ans:[w],
       hint:'Write the length in terms of x using the perimeter. Then use the area to form an equation.',
-      solution:[`Length = (${s} − x) cm`,`x(${s} − x) = ${A}`,`${s}x − x^{2} = ${A}`,eqOf(1,-s,A),`${lin(-w)}${lin(-l)} = 0`,`x = ${w} or x = ${l}`,`Width is shorter, so width = ${w} cm`],space:56};
+      solution:[`Length = (${s} − x) cm`,`x(${s} − x) = ${A}`,`${s}x − x^{2} = ${A}`,`0 = x^{2} − ${s}x + ${A}`,eqOf(1,-s,A),`${lin(-w)}${lin(-l)} = 0`,`x = ${w} or x = ${l}`,`Width is shorter, so width = ${w} cm`],space:56};
   }},
   {type:'ref',key:'tb',pool:'auto',tag:'Throwback'}
 ]},
@@ -1327,7 +1341,7 @@ Object.assign(QUESTS,{
   {type:'boxes',key:'q1',skill:'Minimum point',eoy:'EOY P1 Q5(a)',gen:(rng,q)=>({
     prompt:`The graph of y = ${q.expr} is shown. Write down the coordinates of the minimum point.`,diagram:quadGraphI(q),
     tpl:['(',{b:0},', ',{b:1},')'],ans:[q.h,q.yv],note:'Type a negative number if needed.',
-    hint:'Find the lowest point of the curve. Read across to the y-axis and down to the x-axis. Which comes first in a coordinate?',
+    hint:'Find the lowest point of the curve. Go straight up or down to the x-axis, and across to the y-axis. Which comes first in a coordinate?',
     solution:['The lowest point of the curve is the minimum point.',`x-coordinate: ${nf(q.h)}`,`y-coordinate: ${nf(q.yv)}`,`Minimum point = (${nf(q.h)}, ${nf(q.yv)})`],space:22})},
   {type:'boxes',key:'q2',skill:'Line of symmetry',eoy:'EOY P1 Q5(b)',gen:(rng,q)=>({
     prompt:`Write down the equation of the line of symmetry of y = ${q.expr}.`,diagram:quadGraphI(q),pdfPrompt:`Use the graph in Question 1. Write down the equation of the line of symmetry of y = ${q.expr}.`,pdfNoDiagram:true,
@@ -1342,9 +1356,11 @@ Object.assign(QUESTS,{
       solution:[`x = \\f{${nf(r1)} + ${r2}}{2}`,`x = \\f{${nf(r1+r2)}}{2}`,`x = ${nf(h)}`],space:28};
   }},
   {type:'mcq',key:'q4',skill:'Using symmetry',thinking:true,gen:(rng)=>{
-    const h=ri(rng,-4,4),d=ri(rng,1,5),y0=ri(rng,-9,12);
     const P=(x,y)=>`(${nf(x)}, ${nf(y)})`;
-    const opts=[P(h-d,y0),P(h+d,-y0===y0?y0+1:-y0),P(-(h+d)===h-d?h-d+1:-(h+d),y0),P(h-d,-y0===y0?y0-1:-y0)];
+    let h,d,y0,opts;
+    do{h=ri(rng,-4,4);d=ri(rng,1,5);y0=ri(rng,-9,12);
+      opts=[P(h-d,y0),P(h+d,-y0),P(-(h+d),y0),P(h-d,-y0)];
+    }while(y0===0||new Set([...opts,P(h+d,y0)]).size!==5); // all options different, none is the given point
     const order=shuffle(rng,[0,1,2,3]);
     return {prompt:`The line of symmetry of a quadratic curve is x = ${nf(h)}. The point ${P(h+d,y0)} is on the curve. Which other point is on the curve?`,
       opts:order.map(i=>({m:opts[i]})),correct:order.indexOf(0),
@@ -1388,7 +1404,7 @@ Object.assign(QUESTS,{
   {type:'mcq',key:'q4',skill:'Number of solutions',thinking:true,gen:(rng,q)=>{
     const kind=ri(rng,0,2);const k=kind===0?q.yv-ri(rng,1,3):kind===1?q.yv:q.yv+ri(rng,2,6);
     const ans=kind===0?0:kind===1?1:2;
-    const order=shuffle(rng,[0,1,2,3]);const vals=[ans,(ans+1)%4,(ans+2)%4,(ans+3)%4];
+    const order=shuffle(rng,[0,1,2,3]);const labs=['0','1','2','More than 2'];const vals=[ans,...[0,1,2,3].filter(v=>v!==ans)].map(v=>labs[v]);
     return {prompt:`How many solutions does ${q.expr} = ${nf(k)} have?`,diagram:quadGraphI(q),pdfPrompt:`Use the graph in Question 1. How many solutions does ${q.expr} = ${nf(k)} have?`,pdfNoDiagram:true,
       opts:order.map(i=>({m:String(vals[i])})),correct:order.indexOf(0),
       hint:`Imagine the horizontal line y = ${nf(k)}. How many times does it meet the curve?`,
@@ -1545,9 +1561,9 @@ Object.assign(QUESTS,{
     const b=rng()<0.6?2:3,m=ri(rng,-2,3),a=m-1;
     const lhs=Array(b).fill(`${b}^{a}`).join(' + ');
     const rhs=m>=0?String(Math.pow(b,m)):`\\f{1}{${Math.pow(b,-m)}}`;
-    return {prompt:`Solve ${lhs} = ${rhs}.`,tpl:['a = ',{b:0}],ans:[a],
+    return {prompt:`Solve ${lhs} = ${rhs}.`,tpl:['a = ',{b:0}],ans:[a],note:'Type a negative number if needed.',
       hint:`How many lots of ${b}^{a} are there? Can you write that as one power of ${b}?`,
-      solution:[`${lhs} = ${rhs}`,`${b} × ${b}^{a} = ${rhs}`,`${b}^{a + 1} = ${b}^{${m}}`,`a + 1 = ${m}`,`a = ${a}`],space:34};
+      solution:[`${lhs} = ${rhs}`,`${b} × ${b}^{a} = ${rhs}`,`${b}^{a + 1} = ${b}^{${nf(m)}}`,`a + 1 = ${nf(m)}`,`a = ${nf(a)}`],space:34};
   }},
   {type:'boxes',key:'q4',skill:'Index equations',gen:(rng)=>{
     const base=rng()<0.5?2:3,B1=base*base,B2=base*base*base,c=ri(rng,1,3);
@@ -1693,7 +1709,7 @@ function sketch(type,s){
   return fnSpec({xmin:-3,xmax:3,ymin:-6,ymax:6,W:420,H:360,axes:{xstep:1,ystep:1,nonum:true},fns,
     items:[{k:'label',x:-0.28,y:-0.6,t:'O',size:18}]});
 }
-const SHAPE_NAME={lin:'straight line through O',quad:'U-shaped curve',cub:'S-shaped curve through O',rec:'two separate curves',exp:'curve that stays above the x-axis'};
+const SHAPE_NAME={lin:'a straight line through O',quad:'a U-shaped curve',cub:'an S-shaped curve through O',rec:'two separate curves',exp:'a curve that stays above the x-axis'};
 
 /* depreciation graph: V in thousands of dollars */
 function valueGraph(V0,r){
@@ -1733,7 +1749,7 @@ Object.assign(QUESTS,{
     return {prompt:`P is the point ${pt(x1,y1)} and Q is the point ${pt(x2,y2)}. Find the length of PQ.`,
       tpl:['PQ = ',{b:0},' units'],ans:[L],tol:sfTol(L),note:'Give your answer to 3 significant figures if it is not exact.',
       hint:'Picture a right-angled triangle under PQ. How long is the side going across? How long is the side going up or down?',
-      solution:['PQ^{2} = (change in x)^{2} + (change in y)^{2}',`PQ^{2} = ${dx}^{2} + (${nf(dy)})^{2}`,`PQ^{2} = ${dx*dx+dy*dy}`,`PQ = √${dx*dx+dy*dy}`,`PQ = ${rsf(L,3)} units`],space:40};
+      solution:['PQ^{2} = (change in x)^{2} + (change in y)^{2}',`PQ^{2} = ${dx}^{2} + ${dy<0?'('+nf(dy)+')':dy}^{2}`,`PQ^{2} = ${dx*dx+dy*dy}`,`PQ = √${dx*dx+dy*dy}`,`PQ = ${Number.isInteger(L)?L:L.toPrecision(3)} units`],space:40};
   }},
   {type:'mcq',key:'q3',skill:'Horizontal lines',eoy:'EOY P2 Q12(a)',thinking:true,gen:(rng)=>{
     const y=ri(rng,-3,8),x1=ri(rng,-4,2),x2=x1+ri(rng,3,7);
@@ -1808,7 +1824,7 @@ Object.assign(QUESTS,{
     return {prompt:'Find the equation of the line shown, in the form y = mx + c.',diagram:sp,
       tpl:['y = ',{b:0},'x + ',{b:1}],ans:[m,c],tol:0.01,note:'You may type a fraction like 1/2. Type a negative number if needed.',
       hint:'Where does the line cross the y-axis? Between the two dots, how far up or down, and how far across?',
-      solution:[`c = y-intercept = ${nf(c)}`,'Two points on the line:',pt(0,c),pt(xa,m*xa+c),`m = \\f{${nf(m*xa)}}{${xa}} = ${mS}`,`y = ${Math.abs(m)===1?coefStr(m):mS}x${c===0?'':(c<0?' − '+(-c):' + '+c)}`],space:30};
+      solution:[`c = y-intercept = ${nf(c)}`,'Two points on the line:',pt(0,c),pt(xa,m*xa+c),`m = \\f{${nf(m*xa)}}{${nf(xa)}} = ${mS}`,`y = ${Math.abs(m)===1?coefStr(m):mS}x${c===0?'':(c<0?' − '+(-c):' + '+c)}`],space:30};
   }},
   {type:'mcq',key:'q4',skill:'Points on a line',thinking:true,gen:(rng)=>{
     let m=ri(rng,1,4);if(rng()<0.5)m=-m;const c=ri(rng,-5,5),x0=ri(rng,-3,4),y0=m*x0+c;
@@ -1837,7 +1853,7 @@ Object.assign(QUESTS,{
     const types=[target,...others];const order=shuffle(rng,[0,1,2,3]);const L=i=>LET[order.indexOf(i)];
     return {prompt:`Which graph could be ${eqf(a)}?`,opts:order.map(i=>({d:sketch(types[i],1)})),correct:order.indexOf(0),
       hint:'Is the graph straight or curved? Is it a U, an S, or two separate pieces?',
-      solution:[`${L(0)} is correct: ${eqf(a)} is a ${SHAPE_NAME[target]}.`,...[1,2,3].map(i=>`${L(i)}: ${SHAPE_NAME[types[i]]}`)],space:20};
+      solution:[`${L(0)} is correct: ${eqf(a)} is ${SHAPE_NAME[target]}.`,...[1,2,3].map(i=>`${L(i)}: ${SHAPE_NAME[types[i]]}`)],space:20};
   }})),
   {type:'mcq',key:'q4',skill:'Graph shapes',thinking:true,gen:(rng)=>{
     const a=ri(rng,2,5);const specs=[sketch('quad',-1),sketch('quad',1),sketch('cub',-1),sketch('lin',-1)];
@@ -1858,11 +1874,11 @@ Object.assign(QUESTS,{
     ex:['y = 2^{x}','x = −1: y = \\f{1}{2} = 0.5','x = 0: y = 1','x = 3: y = 8']
   })},
   {type:'boxes',key:'q1',skill:'Table for an exponential',eoy:'EOY P2 Q13(a)',gen:(rng)=>{
-    const b=rng()<0.5?2:3,xs=[-3,-2,-1,0,1,2],ys=xs.map(x=>rsf(Math.pow(b,x),3));
+    const b=rng()<0.5?2:3,xs=b===2?[-3,-2,-1,0,1,2]:[-2,-1,0,1,2,3],ys=xs.map(x=>rsf(Math.pow(b,x),3));
     return {prompt:`Complete the table of values for y = ${b}^{x}. Give values to 3 significant figures.`,
-      table:{xs,ys,missing:[2,3]},ans:[rsf(1/b,3),1],tol:0.006,
+      table:{xs,ys,missing:[xs.indexOf(-1),xs.indexOf(0)]},ans:[rsf(1/b,3),1],tol:0.006,
       hint:'What does a negative power mean? What is any number to the power 0?',
-      solution:['When x = −1:',`y = ${b}^{−1}`,`y = \\f{1}{${b}}`,`y = ${rsf(1/b,3)}`,'When x = 0:',`y = ${b}^{0}`,'y = 1'],space:30};
+      solution:['When x = −1:',`y = ${b}^{−1}`,`y = \\f{1}{${b}}`,`y = ${b===2?'0.5':'0.333'}`,'When x = 0:',`y = ${b}^{0}`,'y = 1'],space:30};
   }},
   {type:'mcq',key:'q2',skill:'Exponential graph features',eoy:'EOY P2 Q13(b)',thinking:true,gen:(rng)=>{
     const b=rng()<0.5?2:3;
@@ -1877,7 +1893,7 @@ Object.assign(QUESTS,{
     return {prompt:`The graph shows the value, $V, of a motorcycle t years after it was bought. Find its value when new. Estimate its value after ${t1} years.`,
       diagram:valueGraph(cx.V0,cx.r),tpl:['When new: $',{b:0},'   After '+t1+' years: $',{b:1}],ans:[cx.V0,rdp(V,0)],tol:300,
       hint:`When the motorcycle is new, what is t? For t = ${t1}, go up to the curve. What value do you read across?`,
-      solution:['When new, t = 0.',`V = $${cx.V0}`,`At t = ${t1}, go up to the curve, then across.`,`V ≈ $${Math.round(V)}`],space:24};
+      solution:['When new, t = 0.',`V = $${cx.V0}`,`At t = ${t1}, go up to the curve, then across.`,`V ≈ $${Math.round(V/100)*100}`],space:24};
   }},
   {type:'boxes',key:'q4',skill:'Reading a graph',eoy:'EOY P2 Q14(c)',gen:(rng,cx)=>{
     const Xs=[cx.V0*0.5,cx.V0*0.4,cx.V0*0.3,cx.V0*0.25,2000].filter((x,i,a)=>a.indexOf(x)===i&&x%500===0);
@@ -1885,7 +1901,7 @@ Object.assign(QUESTS,{
     return {prompt:`Use the graph to estimate how many years it takes for the value to drop to $${X}.`,
       diagram:valueGraph(cx.V0,cx.r),tpl:['',{b:0},' years'],ans:[rdp(t,2)],tol:0.35,
       hint:`Find $${X} on the V-axis. Go across to the curve. Then where do you land on the t-axis?`,
-      solution:[`Draw a line across from $${X} to the curve.`,'Then draw down to the t-axis.',`t ≈ ${rdp(t,1)} years`],space:22};
+      solution:[`Draw a line across from $${X} to the curve.`,'Then draw down to the t-axis.',`t ≈ ${t.toFixed(1)} years`],space:22};
   }},
   {type:'ref',key:'tb',pool:'auto',tag:'Throwback'}
 ]},
@@ -2092,7 +2108,7 @@ Object.assign(QUESTS,{
     const M=w78mcq(rng,['ABC','ACB','BAC','CBA']);
     return {prompt:'DE is parallel to BC. Triangle ADE is similar to triangle ___.',diagram:sp,opts:M.opts,correct:M.correct,
       hint:'Match the letters in order. A matches which vertex? D lies on AB, so D matches which vertex? E matches which?',
-      solution:['A ↔ A (shared angle)','D ↔ B (corresponding angles)','E ↔ C (corresponding angles)',`So triangle ADE ~ triangle ABC: ${M.L(0)}`],space:20};
+      solution:['A ↔ A (shared angle)','D ↔ B (corresponding angles)','E ↔ C (corresponding angles)',`So triangle ADE is similar to triangle ABC: ${M.L(0)}`],space:20};
   }},
   {type:'mcq',key:'q3',skill:'Angle reasons',eoy:'EOY P2 Q10(a)(ii)',thinking:true,gen:(rng)=>{
     const sp=w7simSpec(rng,ri(rng,3,6),ri(rng,2,5),[]);
@@ -2184,7 +2200,7 @@ function w7simSpec(rng,p,q,sides){
 function w8tri(o){return triDiagram(Object.assign({margin:2.6},o));}
 function w8rt(a,o){const s=10/Math.max(a,o);return {A:[0,0],B:[a*s,0],C:[a*s,o*s]};}       // right angle at B
 function w8pqr(a,b){const s=10/Math.max(a,b);return {P:[0,a*s],Q:[0,0],R:[b*s,0]};}       // right angle at Q
-const w8f=(x,n=3)=>String(rsf(x,n));
+const w8f=(x,n=3)=>{const r=rsf(x,n);return Math.abs(r)>=Math.pow(10,n)?String(Math.round(r)):r.toPrecision(n);};
 const w8r1=(x)=>rdp(x,1).toFixed(1);
 function w8distinct(vals,step){const seen=new Set();return vals.map(v=>{let x=v,k=1;while(seen.has(x)){x=rdp(parseFloat(v)+k*step,1).toFixed(1);k++;}seen.add(x);return x;});}
 function w8ramp(rng){
@@ -2232,7 +2248,8 @@ Object.assign(QUESTS,{
   {type:'mcq',key:'q3',skill:'Is it right-angled?',eoy:'EOY P1 Q13(a)',thinking:true,gen:(rng)=>{
     const T=[[3,4,5,2,6],[5,12,13,1,2],[8,15,17,1,1],[7,24,25,1,1]][ri(rng,0,3)];const k=ri(rng,T[3],T[4]);
     let a=T[0]*k,b=T[1]*k;const c=T[2]*k;if(rng()<0.5)[a,b]=[b,a];
-    const sp=w8tri({pts:w8rt(b,a),polys:[['A','B','C']],sides:[['A','B',b+' cm'],['B','C',a+' cm'],['A','C',c+' cm']]});
+    const pr=w8rt(b,a);pr.C[0]+=0.45;
+    const sp=w8tri({pts:pr,polys:[['A','B','C']],sides:[['A','B',b+' cm'],['B','C',a+' cm'],['A','C',c+' cm']]});
     const M=w78mcq(rng,[`Yes: ${a}^{2} + ${b}^{2} = ${c}^{2}`,`Yes: ${a} + ${b} > ${c}`,`No: ${a}^{2} + ${c}^{2} is not ${b}^{2}`,`No: ${c} − ${b} is not ${a}`]);
     return {prompt:`AC = ${c} cm, BC = ${a} cm and AB = ${b} cm. Is triangle ABC right-angled?`,diagram:sp,opts:M.opts,correct:M.correct,
       hint:'Which side is the longest? Square the two shorter sides and add. Do you get the longest side squared?',
@@ -2350,9 +2367,9 @@ Object.assign(QUESTS,{
     const Lm=c.Hd/Math.sin(c.g*DEG);
     const sp=w8rampSpec(Lm,c.g,{sides:[['G','R','?'],['T','R',w8f(c.H)+' m']],angles:[['T','G','R',c.g+'°']]});
     return {prompt:`The truck is ${w8f(c.H)} m high. The ramp angle must not exceed ${c.g}°. Find the minimum length of ramp, correct to 1 decimal place.`,diagram:sp,
-      tpl:['Minimum length = ',{b:0},' m'],ans:[Lm],tol:0.1,
+      tpl:['Minimum length = ',{b:0},' m'],ans:[Lm],tol:0.05,
       hint:'The shortest ramp gives the biggest allowed angle. Which ratio links the height and the ramp? The ramp is on the bottom of the fraction: multiply or divide?',
-      solution:[`sin ${c.g}° = \\f{${w8f(c.H)}}{ramp}`,`ramp = \\f{${w8f(c.H)}}{sin ${c.g}°}`,`ramp = ${w8f(Lm)} m`,`Minimum length ≈ ${w8r1(Lm)} m`,'A shorter ramp would be steeper than '+c.g+'°.'],space:40};
+      solution:[`sin ${c.g}° = \\f{${w8f(c.H)}}{ramp}`,`ramp = \\f{${w8f(c.H)}}{sin ${c.g}°}`,`ramp = ${rdp(Lm,3)}… m`,`So the minimum length is ${w8r1(Lm)} m (1 d.p.)`],space:40};
   }},
   {type:'ref',key:'tb',pool:'auto',tag:'Throwback'}
 ]},
@@ -2376,11 +2393,11 @@ Object.assign(QUESTS,{
     const pr=[[2,4],[4,6],[6,8],[8,10]][ri(rng,0,3)],d=pr[1]*pr[1]-pr[0]*pr[0];
     const v=rng()<0.5;let prompt,list,sol;
     if(v){
-      prompt='"The difference between the squares of any two consecutive even numbers is always even." Is this true?';
+      prompt='Let two consecutive even numbers be n and n + 2, where n is even. "The difference between their squares is always even." Is this true?';
       list=['True: 4(n + 1) = 2 × 2(n + 1)',`False: ${pr[1]}^{2} − ${pr[0]}^{2} = ${d} is odd`,`True: ${pr[1]}^{2} − ${pr[0]}^{2} = ${d} only`,'False: n could be an odd number'];
       sol=['(n + 2)^{2} − n^{2} = 4(n + 1)','4(n + 1) = 2 × 2(n + 1)','So it is always even: true.','One example alone does not prove it.'];
     } else {
-      prompt='"The difference between the squares of any two consecutive even numbers is always a multiple of 8." Is this true?';
+      prompt='Let two consecutive even numbers be n and n + 2, where n is even. "The difference between their squares is always a multiple of 8." Is this true?';
       list=[`False: ${pr[1]}^{2} − ${pr[0]}^{2} = ${d}, not × 8`,'True: 4(n + 1) is a multiple of 8',`True: ${pr[1]}^{2} − ${pr[0]}^{2} = ${d} is even`,'False: 4(n + 1) is always odd'];
       sol=[`${pr[1]}^{2} − ${pr[0]}^{2} = ${pr[1]*pr[1]} − ${pr[0]*pr[0]}`,`= ${d}`,`${d} is not a multiple of 8.`,'One counter-example shows the statement is false.'];
     }
@@ -2395,7 +2412,7 @@ Object.assign(QUESTS,{
     const P=w8pqr(a,b);const f=foot(V(...P.Q),V(...P.P),V(...P.R));P.N=[f.x,f.y];
     const sp=w8tri({pts:P,polys:[['P','Q','R']],dashed:[['Q','N']],right:[['P','Q','R'],['Q','N','R']],sides:[['P','Q',a+' m'],['Q','R',b+' m']],angles:[['Q','R','P',thr+'°']]});
     return {prompt:`Angle PQR = 90°, PQ = ${a} m, QR = ${b} m and angle PRQ = ${thr}°. N is on PR and QN is perpendicular to PR. Find QN.`,diagram:sp,
-      tpl:['QN = ',{b:0},' m'],ans:[rsf(qn,3)],tol:sfTol(qn)+Math.abs(qn-qnx),note:'Give your answer to 3 significant figures.',
+      tpl:['QN = ',{b:0},' m'],ans:[rsf(qn,3)],tol:sfTol(qn),note:'Give your answer to 3 significant figures.',
       hint:'Look at triangle QNR. Where is its right angle? From angle PRQ, which side is QN and which side is QR?',
       solution:['In triangle QNR, angle QNR = 90°.',`sin ${thr}° = \\f{QN}{QR}`,`QN = ${b} × sin ${thr}°`,`QN = ${w8f(qn)} m`],space:40};
   }},

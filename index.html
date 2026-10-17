@@ -548,7 +548,7 @@ function triDiagram(o){
     let a0=Math.atan2(u.y,u.x),a1=Math.atan2(w.y,w.x);let d=a1-a0;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;
     const pts=[];for(let i=0;i<=16;i++){const t2=a0+d*i/16;pts.push([B.x+r*Math.cos(t2),B.y+r*Math.sin(t2)]);}
     items.push({k:'path',pts,c:'tri',w:1.6});
-    if(t){const mid=a0+d/2,q=vadd(B,vmul(V(Math.cos(mid),Math.sin(mid)),r+(Math.abs(d)<0.45?1.3:0.42)*scale+0.04*t.length*scale));items.push({k:'label',x:q.x,y:q.y,t,size:19});}});
+    if(t){const mid=a0+d/2,q=vadd(B,vmul(V(Math.cos(mid),Math.sin(mid)),r+(Math.abs(d)<0.45?1.3:0.58)*scale+0.05*t.length*scale));items.push({k:'label',x:q.x,y:q.y,t,size:19});}});
   (o.ticks||[]).forEach(([a,b,n])=>{const A=vv(a),B=vv(b),M=vmid(A,B),u=vnorm(vsub(B,A)),nn=vperp(u),r=0.28*scale;
     for(let i=0;i<n;i++){const c=vadd(M,vmul(u,(i-(n-1)/2)*0.22*scale));items.push({k:'path',pts:[P2(vadd(c,vmul(nn,r))),P2(vsub(c,vmul(nn,r)))],c:'tri',w:1.8});}});
   (o.par||[]).forEach(([a,b],idx)=>{const A=vv(a),B=vv(b),M=vmid(A,B),u=vnorm(vsub(B,A)),nn=vperp(u),r=0.25*scale;
@@ -3059,7 +3059,9 @@ function makeWeekPDF(wn){
             pdfDrawing(doc,optsSrc[k].d,ox+2,y+5,gw-4,gh);}
             y+=gh+9;}
         } else {
-          const cw=(Wd-12)/2;for(let r=0;r<2;r++){ensure(10);for(let c2=0;c2<2;c2++){const k=r*2+c2;doc.setFont('helvetica','bold');doc.setFontSize(12);doc.text(LET[k]+'.',L+12+c2*cw,y+6);doc.setFont('helvetica','normal');inlineRich(doc,optsSrc[k].m,L+20+c2*cw,y+6,12);}y+=10;}
+          const cw=(Wd-12)/2,widest=Math.max(...optsSrc.map(o=>inlineWidth(doc,o.m,12)));
+          if(widest<=cw-12){for(let r=0;r<2;r++){ensure(10);for(let c2=0;c2<2;c2++){const k=r*2+c2;doc.setFont('helvetica','bold');doc.setFontSize(12);doc.text(LET[k]+'.',L+12+c2*cw,y+6);doc.setFont('helvetica','normal');inlineRich(doc,optsSrc[k].m,L+20+c2*cw,y+6,12);}y+=10;}}
+          else {for(let k=0;k<4;k++){const oh=richBlock(doc,optsSrc[k].m,0,0,Wd-24,12,true);ensure(oh+3);doc.setFont('helvetica','bold');doc.setFontSize(12);doc.text(LET[k]+'.',L+12,y+4.3);doc.setFont('helvetica','normal');y+=richBlock(doc,optsSrc[k].m,L+20,y,Wd-24,12)+2;}}
           y+=1;}
       }
       // working space
